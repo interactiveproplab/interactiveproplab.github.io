@@ -1,3 +1,5 @@
+import FaceWorker from "./face-worker.js?worker&inline";
+
 const CALIBRATION_MS = 1600;
 const CALIBRATION_SETTLE_MS = 350;
 
@@ -184,10 +186,10 @@ function initializeFreshWorker(attempt) {
     trackerInitStage =
       `attempt ${attempt}: worker starting`;
 
-    const candidate = new Worker(
-      new URL("./face-worker.js", import.meta.url),
-      { type: "module" }
-    );
+    // Vite embeds the complete face worker into the production bundle.
+    // This removes the separately fetched hashed worker chunk, which was the
+    // failure point behind intermittent "Face tracker worker failed to load".
+    const candidate = new FaceWorker();
 
     worker = candidate;
     workerReady = false;
@@ -253,10 +255,19 @@ function initializeFreshWorker(attempt) {
     };
 
     const onError = (event) => {
+      const location = [
+        event.filename,
+        event.lineno ? `line ${event.lineno}` : "",
+        event.colno ? `column ${event.colno}` : "",
+      ]
+        .filter(Boolean)
+        .join(", ");
+
       fail(
         new Error(
-          event.message ||
-          "Face tracker worker failed to load."
+          `Face tracker worker failed before initialization` +
+          `${location ? ` (${location})` : ""}: ` +
+          `${event.message || "unknown worker startup error"}`
         )
       );
     };

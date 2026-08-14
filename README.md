@@ -75,3 +75,34 @@ git add -A
 git commit -m "Update Interactive Prop Lab"
 git push
 ```
+
+
+## Inline-worker hardening
+
+The face-tracking worker is now imported using Vite's inline worker mode:
+
+```js
+import FaceWorker from "./face-worker.js?worker&inline";
+```
+
+and constructed with:
+
+```js
+const worker = new FaceWorker();
+```
+
+This deliberately removes the separately emitted/fetched hashed worker asset
+(`assets/face-worker-....js`) from the startup path.
+
+The observed failure:
+
+```text
+Last stage: attempt 3: INIT sent.
+Last error: Face tracker worker failed to load.
+```
+
+means the worker script failed before executing enough code to post its first
+`INIT_STAGE` message. It therefore occurred before WASM resolution, model loading,
+FaceLandmarker creation, camera-frame inference, or calibration.
+
+Vendored WASM/model assets remain unchanged and local to the site.
