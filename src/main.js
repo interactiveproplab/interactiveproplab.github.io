@@ -1,5 +1,3 @@
-import FaceWorker from "./face-worker.js?worker&inline";
-
 const CALIBRATION_MS = 1600;
 const CALIBRATION_SETTLE_MS = 350;
 
@@ -68,6 +66,10 @@ ui.start.addEventListener("click", start);
 ui.retry.addEventListener("click", start);
 ui.stop.addEventListener("click", stop);
 window.addEventListener("pagehide", stop);
+
+// Lets the tiny HTML fallback distinguish a tracker-module boot failure from
+// a normal camera/tracker error.
+window.__IPL_TRACKER_BOOTED__ = true;
 
 updateSignals(state);
 
@@ -186,10 +188,10 @@ function initializeFreshWorker(attempt) {
     trackerInitStage =
       `attempt ${attempt}: worker starting`;
 
-    // Vite embeds the complete face worker into the production bundle.
-    // This removes the separately fetched hashed worker chunk, which was the
-    // failure point behind intermittent "Face tracker worker failed to load".
-    const candidate = new FaceWorker();
+    const candidate = new Worker(
+      new URL("./face-worker.js", import.meta.url),
+      { type: "module" }
+    );
 
     worker = candidate;
     workerReady = false;

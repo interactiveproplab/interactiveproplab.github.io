@@ -77,32 +77,23 @@ git push
 ```
 
 
-## Inline-worker hardening
+## v18 fixed frontend boot
 
-The face-tracking worker is now imported using Vite's inline worker mode:
+The previous inline-worker experiment was removed.
 
-```js
-import FaceWorker from "./face-worker.js?worker&inline";
-```
-
-and constructed with:
+The tracker is back on Vite's standard worker construction:
 
 ```js
-const worker = new FaceWorker();
+new Worker(new URL("./face-worker.js", import.meta.url), { type: "module" })
 ```
 
-This deliberately removes the separately emitted/fetched hashed worker asset
-(`assets/face-worker-....js`) from the startup path.
+The page now has a tiny no-dependency fallback handler on the camera/retry buttons.
+If the main tracker module itself fails before it can attach its normal handlers,
+the button is still interactive and reports:
 
-The observed failure:
+`Facial landmarking source unavailable. The tracking application failed to load
+before camera startup.`
 
-```text
-Last stage: attempt 3: INIT sent.
-Last error: Face tracker worker failed to load.
-```
-
-means the worker script failed before executing enough code to post its first
-`INIT_STAGE` message. It therefore occurred before WASM resolution, model loading,
-FaceLandmarker creation, camera-frame inference, or calibration.
-
-Vendored WASM/model assets remain unchanged and local to the site.
+Worker startup errors also include filename/line/column when the browser provides
+them, so a future worker failure is diagnosable rather than just saying "failed
+to load".
