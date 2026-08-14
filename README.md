@@ -1,21 +1,39 @@
-# Interactive Prop Lab — v18 vendored runtime
+# Interactive Prop Lab — v18 main-thread ImageData tracker
 
-This build combines:
+This version deliberately removes the face-tracking Web Worker.
 
-- the working Chromium tracker architecture;
-- three fresh-worker startup attempts;
-- 10 second timeout per attempt;
-- explicit "Facial landmarking source unavailable" errors;
-- LibreWolf/Firefox compatibility handling;
-- the Chromium compatibility footer;
-- a permanently vendored MediaPipe WASM runtime and Face Landmarker model.
+The repeated production failure:
 
-## One-time vendoring
+`Last stage: attempt 3: INIT sent. Face tracker worker failed before initialization`
 
-The runtime assets are intended to be committed to this repository so normal
-deployments never download or copy them again.
+occurred before MediaPipe ever ran. The worker layer itself was the failure boundary.
 
-On CachyOS / Arch:
+This build returns to the detector architecture that was actually observed working:
+
+camera
+→ fixed 2D processing canvas
+→ getImageData()
+→ MediaPipe FaceLandmarker.detect(ImageData)
+→ expression mapping
+→ 64×32 protogen matrix
+
+Key points:
+
+- no Web Worker;
+- no worker chunk;
+- no worker INIT/READY handshake;
+- no worker startup timeout;
+- @mediapipe/tasks-vision pinned to 0.10.32;
+- explicit no-SIMD WASM fileset, matching the proven build;
+- WASM + model are vendored under public/;
+- detector input is ImageData, avoiding the video/ImageBitmap/WebGL bridge;
+- approved layout/calibration/matrix preserved;
+- Firefox/LibreWolf gets the Chromium compatibility message;
+- detector recovery failures keep the camera visible.
+
+## One-time asset vendoring
+
+Run:
 
 ```bash
 npm install
@@ -23,77 +41,13 @@ npm run vendor
 npm run verify-assets
 ```
 
-That creates:
-
-```text
-public/
-├── wasm/
-│   └── <the exact WASM files from @mediapipe/tasks-vision 1.0.0>
-└── models/
-    └── face_landmarker.task
-```
-
-Then commit them:
+Then commit everything:
 
 ```bash
 git add -A
-git commit -m "Vendor MediaPipe runtime assets"
-git push
+git commit -m "Deploy v18 main-thread tracker"
+git fetch origin
+git push -u origin main --force-with-lease
 ```
 
-After that, GitHub Actions only verifies and deploys the committed files. It does
-not fetch the model or copy WASM from node_modules during deployment.
-
-## Why this is useful
-
-It removes build/deploy asset drift:
-
-- package version is pinned;
-- WASM bytes are committed;
-- model bytes are committed;
-- `assets-lock.json` records size + SHA-256 hashes;
-- a build fails if runtime files are absent or incomplete.
-
-This does not guarantee MediaPipe itself can never hang during initialization,
-which is why the fresh-worker retry logic remains.
-
-## Browser support
-
-For best compatibility, use a Chromium-based browser.
-
-Firefox/LibreWolf receive a clear landmark-source unavailable message instead of
-entering the MediaPipe runtime path.
-
-## Deploy
-
-GitHub Pages should use **GitHub Actions** as its source.
-
-Once `public/wasm` and `public/models` are committed, ordinary deployment is:
-
-```bash
-git add -A
-git commit -m "Update Interactive Prop Lab"
-git push
-```
-
-
-## v18 fixed frontend boot
-
-The previous inline-worker experiment was removed.
-
-The tracker is back on Vite's standard worker construction:
-
-```js
-new Worker(new URL("./face-worker.js", import.meta.url), { type: "module" })
-```
-
-The page now has a tiny no-dependency fallback handler on the camera/retry buttons.
-If the main tracker module itself fails before it can attach its normal handlers,
-the button is still interactive and reports:
-
-`Facial landmarking source unavailable. The tracking application failed to load
-before camera startup.`
-
-Worker startup errors also include filename/line/column when the browser provides
-them, so a future worker failure is diagnosable rather than just saying "failed
-to load".
+Normal GitHub Pages builds then use the committed local runtime/model assets.

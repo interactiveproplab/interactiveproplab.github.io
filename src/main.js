@@ -1,5 +1,24 @@
+import { FaceLandmarker } from "@mediapipe/tasks-vision";
+
+const VISION_WASM_FILESET = {
+  wasmLoaderPath: new URL(
+    "./wasm/vision_wasm_nosimd_internal.js",
+    window.location.href
+  ).href,
+  wasmBinaryPath: new URL(
+    "./wasm/vision_wasm_nosimd_internal.wasm",
+    window.location.href
+  ).href,
+};
+
+const MODEL_URL = new URL(
+  "./models/face_landmarker.task",
+  window.location.href
+).href;
+
 const CALIBRATION_MS = 1600;
 const CALIBRATION_SETTLE_MS = 350;
+const FRAME_INTERVAL_MS = 85; // ~12 fps; enough for the web demo with smoothing.
 
 const TUNING = {
   gazeGain: 2.4,
@@ -38,22 +57,23 @@ const signalEls = {
 const overlayContext = ui.overlay.getContext("2d");
 const matrixContext = ui.matrix.getContext("2d");
 
-let worker = null;
-let workerReady = false;
-let workerBusy = false;
-let initPromise = null;
-let trackerInitStage = "worker not started";
-const TRACKER_INIT_ATTEMPTS = 3;
-const TRACKER_INIT_TIMEOUT_MS = 10000;
+const processingCanvas = document.createElement("canvas");
+const processingContext = processingCanvas.getContext("2d", {
+  alpha: false,
+  willReadFrequently: true,
+});
 
+let faceLandmarker = null;
 let stream = null;
 let running = false;
+let detecting = false;
 let rafId = 0;
+let lastFrameAt = 0;
 let lastVideoTime = -1;
-let lastTimestampMs = -1;
+let processingWidth = 0;
+let processingHeight = 0;
 let consecutiveInferenceErrors = 0;
-let framesSent = 0;
-let resultsReceived = 0;
+let recoveringDetector = false;
 
 let baseline = null;
 let calibrationStartedAt = null;
@@ -66,9 +86,6 @@ ui.start.addEventListener("click", start);
 ui.retry.addEventListener("click", start);
 ui.stop.addEventListener("click", stop);
 window.addEventListener("pagehide", stop);
-
-// Lets the tiny HTML fallback distinguish a tracker-module boot failure from
-// a normal camera/tracker error.
 window.__IPL_TRACKER_BOOTED__ = true;
 
 updateSignals(state);
@@ -86,6 +103,7 @@ async function start() {
     setStatus("CHROMIUM REQUIRED", false);
     return;
   }
+
   ui.start.disabled = true;
   ui.retry.disabled = true;
   setStatus("LOADING TRACKER", false);
@@ -95,10 +113,15 @@ async function start() {
       throw new Error("Camera access is not available in this browser.");
     }
 
-    await ensureWorker();
+    await ensureFaceLandmarker();
 
     stream = await navigator.mediaDevices.getUserMedia({
-      video: true,
+      video: {
+        facingMode: "user",
+        width: { ideal: 640 },
+        height: { ideal: 480 },
+        frameRate: { ideal: 24, max: 30 },
+      },
       audio: false,
     });
 
@@ -107,6 +130,7 @@ async function start() {
     await waitForVideo(ui.video);
 
     configureProcessingFrame();
+    sizeCanvases();
     resetTracking();
 
     running = true;
@@ -119,389 +143,179 @@ async function start() {
   } catch (error) {
     console.error(error);
     stopTracks();
-
     const detail = readableError(error);
-
     showError(
-      detail.startsWith("Facial landmarking source unavailable.")
-        ? detail
-        : `Facial landmarking source unavailable. ${detail}`
+      `Facial landmarking source unavailable. ${detail}`
     );
-
-    setStatus(
-      "LANDMARK SOURCE UNAVAILABLE",
-      false
-    );
+    setStatus("LANDMARK SOURCE UNAVAILABLE", false);
   } finally {
     ui.start.disabled = false;
     ui.retry.disabled = false;
   }
 }
 
-async function ensureWorker() {
-  if (workerReady && worker) return;
+async function ensureFaceLandmarker() {
+  if (faceLandmarker) return;
 
-  let lastError = null;
+  faceLandmarker = await FaceLandmarker.createFromOptions(
+    VISION_WASM_FILESET,
+    {
+      baseOptions: {
+        modelAssetPath: MODEL_URL,
+        delegate: "CPU",
+      },
+      runningMode: "IMAGE",
+      numFaces: 1,
+      minFaceDetectionConfidence: 0.45,
+      minFacePresenceConfidence: 0.45,
+      minTrackingConfidence: 0.45,
+      outputFaceBlendshapes: false,
+      outputFacialTransformationMatrixes: false,
+    }
+  );
 
-  for (
-    let attempt = 1;
-    attempt <= TRACKER_INIT_ATTEMPTS;
-    attempt += 1
-  ) {
-    setStatus(
-      attempt === 1
-        ? "LOADING TRACKER"
-        : `RETRYING TRACKER ${attempt}/${TRACKER_INIT_ATTEMPTS}`,
-      false
+}
+
+function loop(now) {
+  if (!running) return;
+
+  rafId = requestAnimationFrame(loop);
+
+  if (detecting || recoveringDetector) return;
+  if (now - lastFrameAt < FRAME_INTERVAL_MS) return;
+  if (ui.video.readyState < HTMLMediaElement.HAVE_CURRENT_DATA) return;
+  if (!ui.video.videoWidth || !ui.video.videoHeight) return;
+  if (ui.video.currentTime === lastVideoTime) return;
+
+  lastFrameAt = now;
+  lastVideoTime = ui.video.currentTime;
+  detecting = true;
+
+  try {
+    sizeCanvases();
+
+    processingContext.drawImage(
+      ui.video,
+      0,
+      0,
+      processingWidth,
+      processingHeight
     );
+
+    const pixels = processingContext.getImageData(
+      0,
+      0,
+      processingWidth,
+      processingHeight
+    );
+
+    let result;
 
     try {
-      await initializeFreshWorker(attempt);
-      return;
+      result = faceLandmarker.detect(pixels);
+      consecutiveInferenceErrors = 0;
     } catch (error) {
-      lastError = error;
-      console.warn(
-        `[IPL tracker] initialization attempt ${attempt} failed:`,
-        error
-      );
-      destroyWorker();
-
-      if (attempt < TRACKER_INIT_ATTEMPTS) {
-        await delay(250);
-      }
+      handleInferenceError(error);
+      return;
     }
+
+    try {
+      handleDetectionResult(result);
+    } catch (error) {
+      console.error("Tracker mapping/render error:", error);
+      failRuntime(error);
+    }
+  } finally {
+    detecting = false;
+  }
+}
+
+function handleInferenceError(error) {
+  consecutiveInferenceErrors += 1;
+
+  const message = error?.message || String(error);
+  console.warn(
+    `Face Landmarker frame dropped (${consecutiveInferenceErrors}):`,
+    message
+  );
+
+  clearOverlay();
+
+  if (consecutiveInferenceErrors < 4) {
+    setStatus("RECOVERING", false);
+    return;
   }
 
-  throw new Error(
-    `Facial landmarking source unavailable. ` +
-    `The MediaPipe tracking runtime did not initialize after ` +
-    `${TRACKER_INIT_ATTEMPTS} attempts. ` +
-    `Last stage: ${trackerInitStage}. ` +
-    `Last error: ${lastError?.message || String(lastError)}`
-  );
+  recoverDetector(message);
 }
 
-function initializeFreshWorker(attempt) {
-  destroyWorker();
+async function recoverDetector(lastError) {
+  if (recoveringDetector) return;
 
-  return new Promise((resolve, reject) => {
-    trackerInitStage =
-      `attempt ${attempt}: worker starting`;
-
-    const candidate = new Worker(
-      new URL("./face-worker.js", import.meta.url),
-      { type: "module" }
-    );
-
-    worker = candidate;
-    workerReady = false;
-
-    let settled = false;
-
-    const cleanup = () => {
-      window.clearTimeout(timeout);
-      candidate.removeEventListener("message", onMessage);
-      candidate.removeEventListener("error", onError);
-    };
-
-    const succeed = () => {
-      if (settled) return;
-      settled = true;
-      cleanup();
-      workerReady = true;
-      trackerInitStage =
-        `attempt ${attempt}: ready`;
-      resolve();
-    };
-
-    const fail = (error) => {
-      if (settled) return;
-      settled = true;
-      cleanup();
-      reject(error);
-    };
-
-    const onMessage = (event) => {
-      const message = event.data;
-
-      if (message?.type === "INIT_STAGE") {
-        trackerInitStage =
-          `attempt ${attempt}: ${message.stage || "unknown stage"}`;
-        console.info(
-          "[IPL tracker] init:",
-          trackerInitStage
-        );
-        return;
-      }
-
-      // Support both v17 READY and official-style INIT_DONE protocols.
-      if (
-        message?.type === "READY" ||
-        message?.type === "INIT_DONE"
-      ) {
-        succeed();
-        return;
-      }
-
-      if (
-        message?.type === "INIT_ERROR" ||
-        message?.type === "ERROR"
-      ) {
-        fail(
-          new Error(
-            message.error ||
-            "Face tracker worker initialization failed."
-          )
-        );
-      }
-    };
-
-    const onError = (event) => {
-      const location = [
-        event.filename,
-        event.lineno ? `line ${event.lineno}` : "",
-        event.colno ? `column ${event.colno}` : "",
-      ]
-        .filter(Boolean)
-        .join(", ");
-
-      fail(
-        new Error(
-          `Face tracker worker failed before initialization` +
-          `${location ? ` (${location})` : ""}: ` +
-          `${event.message || "unknown worker startup error"}`
-        )
-      );
-    };
-
-    candidate.addEventListener("message", onMessage);
-    candidate.addEventListener("error", onError);
-
-    // Keep the normal runtime handler attached as well.
-    candidate.addEventListener(
-      "message",
-      handleWorkerMessage
-    );
-
-    const timeout = window.setTimeout(() => {
-      fail(
-        new Error(
-          `Initialization timed out at ${trackerInitStage}`
-        )
-      );
-    }, TRACKER_INIT_TIMEOUT_MS);
-
-    trackerInitStage =
-      `attempt ${attempt}: INIT sent`;
-
-    candidate.postMessage({
-      type: "INIT",
-      wasmRoot: new URL(
-        "./wasm/",
-        window.location.href
-      ).href,
-      modelUrl: new URL(
-        "./models/face_landmarker.task",
-        window.location.href
-      ).href,
-    });
-  });
-}
-
-function destroyWorker() {
-  workerReady = false;
-  workerBusy = false;
-  initPromise = null;
-
-  if (!worker) return;
+  recoveringDetector = true;
+  setStatus("RESTARTING TRACKER", false);
 
   try {
-    worker.terminate();
-  } catch (error) {
-    console.warn(
-      "[IPL tracker] worker termination failed:",
-      error
-    );
-  }
-
-  worker = null;
-}
-
-function delay(ms) {
-  return new Promise(
-    (resolve) => window.setTimeout(resolve, ms)
-  );
-}
-
-async function loop() {
-  if (!running) return;
-
-  if (
-    !workerReady ||
-    workerBusy ||
-    ui.video.readyState < HTMLMediaElement.HAVE_CURRENT_DATA ||
-    !ui.video.videoWidth ||
-    !ui.video.videoHeight
-  ) {
-    rafId = requestAnimationFrame(loop);
-    return;
-  }
-
-  if (ui.video.currentTime === lastVideoTime) {
-    rafId = requestAnimationFrame(loop);
-    return;
-  }
-
-  lastVideoTime = ui.video.currentTime;
-
-  try {
-    const bitmap = await createImageBitmap(ui.video);
-
-    const now = performance.now();
-    const timestampMs =
-      now > lastTimestampMs ? now : lastTimestampMs + 1;
-    lastTimestampMs = timestampMs;
-
-    workerBusy = true;
-    framesSent += 1;
-
-    if (framesSent === 1 || framesSent % 30 === 0) {
-      console.info(
-        "[IPL tracker] sending frame",
-        framesSent,
-        `${bitmap.width}×${bitmap.height}`,
-        `video=${ui.video.videoWidth}×${ui.video.videoHeight}`
-      );
+    try {
+      faceLandmarker?.close?.();
+    } catch (closeError) {
+      console.warn("Could not close old Face Landmarker:", closeError);
     }
 
-    worker.postMessage(
-      {
-        type: "FRAME",
-        bitmap,
-        timestampMs,
-      },
-      [bitmap]
-    );
-  } catch (error) {
-    console.error("Failed to create ImageBitmap from video:", error);
-    consecutiveInferenceErrors += 1;
+    faceLandmarker = null;
+    await ensureFaceLandmarker();
 
-    if (consecutiveInferenceErrors >= 4) {
-      showError(`Camera frame conversion failed: ${error?.message || String(error)}`);
-      setStatus("TRACKER ERROR", false);
-    }
-
-    rafId = requestAnimationFrame(loop);
-  }
-}
-
-function scheduleNextFrame() {
-  if (!running) return;
-  rafId = requestAnimationFrame(loop);
-}
-
-function handleWorkerMessage(event) {
-  const message = event.data;
-
-  if (message?.type === "READY") {
-    workerReady = true;
-    return;
-  }
-
-  if (message?.type === "RESULT") {
-    workerBusy = false;
     consecutiveInferenceErrors = 0;
-    hideError();
-    resultsReceived += 1;
+    baseline = null;
+    calibrationStartedAt = null;
+    calibrationSamples = [];
 
-    if (
-      resultsReceived === 1 ||
-      resultsReceived % 30 === 0
-    ) {
-      console.info(
-        "[IPL tracker] result",
-        resultsReceived,
-        `faces=${message.faceCount ?? (message.face ? 1 : 0)}`,
-        message.bitmapSize
-          ? `bitmap=${message.bitmapSize.width}×${message.bitmapSize.height}`
-          : ""
-      );
-    }
-
-    if (!running) return;
-
-    sizeCanvases();
-    clearOverlay();
-
-    const landmarks = message.face;
-
-    if (!landmarks) {
-      consecutiveNoFaceFrames += 1;
-      handleFaceLost();
-      scheduleNextFrame();
-      return;
-    }
-
-    consecutiveNoFaceFrames = 0;
-    drawFeatureOverlay(landmarks);
-
-    const now = performance.now();
-    const raw = measureLandmarks(landmarks, now / 1000);
-
-    if (!baseline) {
-      collectCalibration(raw, now);
-      scheduleNextFrame();
-      return;
-    }
-
-    const target = normalise(raw, baseline);
-    state = smoothState(state, target);
-
-    updateSignals(state);
-    ui.calibration.hidden = true;
-    setStatus("TRACKING", true);
-    scheduleNextFrame();
-    return;
-  }
-
-  if (message?.type === "DETECT_ERROR") {
-    workerBusy = false;
-    consecutiveInferenceErrors += 1;
-    console.warn(
-      `Face Landmarker frame failed (${consecutiveInferenceErrors}):`,
-      message.error
-    );
-
-    if (consecutiveInferenceErrors < 4) {
-      setStatus("RECOVERING", false);
-      scheduleNextFrame();
-      return;
-    }
-
+    setStatus("FINDING FACE", true);
+  } catch (error) {
+    console.error("Face Landmarker recovery failed:", error);
+    const detail =
+      `${lastError}; recovery failed: ${error?.message || String(error)}`;
     showError(
-      `Face tracker error: ${
-        message.error || "Repeated Face Landmarker inference failure."
-      }`
-    );
-    setStatus("TRACKER ERROR", false);
-
-    // Keep the webcam running. A detector failure should not make the camera
-    // disappear and look like camera permission failed.
-    scheduleNextFrame();
-    return;
-  }
-
-  if (message?.type === "ERROR") {
-    workerBusy = false;
-
-    showError(
-      "Facial landmarking source unavailable. " +
-      (message.error || "The face tracker worker failed.")
+      `Facial landmarking source unavailable. ${detail}`
     );
     setStatus("LANDMARK SOURCE UNAVAILABLE", false);
-
-    // Camera remains visible; only the landmark source has failed.
+    // Keep the camera visible. The camera is not the failed component.
+  } finally {
+    recoveringDetector = false;
   }
+}
+
+function handleDetectionResult(result) {
+  if (!running) return;
+
+  clearOverlay();
+
+  const landmarks = result?.faceLandmarks?.[0];
+
+  if (!landmarks) {
+    consecutiveNoFaceFrames += 1;
+    handleFaceLost();
+    return;
+  }
+
+  consecutiveNoFaceFrames = 0;
+
+  drawFeatureOverlay(landmarks);
+
+  const now = performance.now();
+  const raw = measureLandmarks(landmarks, now / 1000);
+
+  if (!baseline) {
+    collectCalibration(raw, now);
+    return;
+  }
+
+  const target = normalise(raw, baseline);
+  state = smoothState(state, target);
+
+  updateSignals(state);
+  ui.calibration.hidden = true;
+  setStatus("TRACKING", true);
 }
 
 
@@ -571,7 +385,7 @@ function failRuntime(error) {
   running = false;
   cancelAnimationFrame(rafId);
   rafId = 0;
-  workerBusy = false;
+  detecting = false;
 
   stopTracks();
 
@@ -593,7 +407,7 @@ function stop() {
   running = false;
   cancelAnimationFrame(rafId);
   rafId = 0;
-  workerBusy = false;
+  detecting = false;
 
   stopTracks();
 
@@ -603,6 +417,8 @@ function stop() {
 
   clearOverlay();
   resetTracking();
+  processingWidth = 0;
+  processingHeight = 0;
 
   ui.startPanel.hidden = false;
   ui.stop.hidden = true;
@@ -626,36 +442,63 @@ function resetTracking() {
   calibrationSamples = [];
   consecutiveNoFaceFrames = 0;
   state = neutralState();
+  lastFrameAt = 0;
   lastVideoTime = -1;
-  lastTimestampMs = -1;
   consecutiveInferenceErrors = 0;
-  framesSent = 0;
-  resultsReceived = 0;
+  recoveringDetector = false;
   updateSignals(state);
   hideError();
 }
 
 
 function configureProcessingFrame() {
-  sizeCanvases();
-}
+  const sourceWidth = ui.video.videoWidth;
+  const sourceHeight = ui.video.videoHeight;
 
+  if (!sourceWidth || !sourceHeight) {
+    throw new Error("Camera has no usable dimensions.");
+  }
+
+  const maxWidth = 640;
+  const scale = Math.min(1, maxWidth / sourceWidth);
+
+  // Keep the detector frame fixed for the session and use even dimensions.
+  processingWidth = Math.max(
+    2,
+    Math.round((sourceWidth * scale) / 2) * 2
+  );
+
+  processingHeight = Math.max(
+    2,
+    Math.round((sourceHeight * scale) / 2) * 2
+  );
+
+  processingCanvas.width = processingWidth;
+  processingCanvas.height = processingHeight;
+  ui.overlay.width = processingWidth;
+  ui.overlay.height = processingHeight;
+}
 
 function sizeCanvases() {
-  const width = ui.video.videoWidth;
-  const height = ui.video.videoHeight;
-
-  if (!width || !height) return;
+  // Deliberately do not resize the detector canvas while tracking.
+  if (!processingWidth || !processingHeight) return;
 
   if (
-    ui.overlay.width !== width ||
-    ui.overlay.height !== height
+    processingCanvas.width !== processingWidth ||
+    processingCanvas.height !== processingHeight
   ) {
-    ui.overlay.width = width;
-    ui.overlay.height = height;
+    processingCanvas.width = processingWidth;
+    processingCanvas.height = processingHeight;
+  }
+
+  if (
+    ui.overlay.width !== processingWidth ||
+    ui.overlay.height !== processingHeight
+  ) {
+    ui.overlay.width = processingWidth;
+    ui.overlay.height = processingHeight;
   }
 }
-
 
 function clearOverlay() {
   overlayContext.clearRect(

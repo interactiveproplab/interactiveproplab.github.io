@@ -1,2 +1,0 @@
-Run: npm install && npm run vendor
-Then commit the generated WASM files.
