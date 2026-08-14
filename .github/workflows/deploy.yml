@@ -25,13 +25,21 @@ jobs:
       - name: Checkout
         uses: actions/checkout@v4
 
+      - name: Prepare exact static artifact
+        run: |
+          mkdir _site
+          cp index.html _site/
+          cp style.css _site/
+          cp ipl-tracker-static-v18.js _site/
+          cp favicon.ico _site/
+
       - name: Configure Pages
         uses: actions/configure-pages@v5
 
       - name: Upload static site
         uses: actions/upload-pages-artifact@v3
         with:
-          path: .
+          path: _site
 
       - name: Deploy
         id: deployment

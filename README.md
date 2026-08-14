@@ -1,28 +1,28 @@
-# Interactive Prop Lab — v18 stable static build
+# Interactive Prop Lab — v18 static-clean
 
-This intentionally returns to the last browser architecture that was actually
-confirmed working:
+This build is intentionally plain static HTML/CSS/JS.
 
-- plain static HTML/CSS/JS;
+Critical properties:
 - no Vite;
-- no npm runtime import;
+- no npm package import;
+- no bare module specifier;
 - no Web Worker;
-- no worker handshake;
-- no worker chunk;
-- no inline-worker transform;
-- MediaPipe Tasks Vision 0.10.32;
-- main-thread fixed processing canvas;
-- `getImageData()` -> `FaceLandmarker.detect(ImageData)`;
-- approved calibration and 64x32 matrix output.
+- no generated asset chunks;
+- MediaPipe Tasks Vision is imported from a full browser-resolvable jsDelivr URL;
+- script filename is unique: `ipl-tracker-static-v18.js`;
+- index references it with `?v=18-static-clean` to prevent stale browser cache;
+- GitHub Actions deploys only four explicit static files.
 
-The only additions are:
-- Chromium compatibility wording in the privacy/footer copy;
-- a Firefox/LibreWolf guard with a clear landmark-source unavailable message;
-- a simple GitHub Actions workflow that deploys the static files as-is.
+The browser import is:
 
-## Deploy
+```js
+import { FaceLandmarker }
+  from "https://cdn.jsdelivr.net/npm/@mediapipe/tasks-vision@0.10.32/vision_bundle.mjs";
+```
 
-Replace the repo contents with this folder, then:
+## Replace the repository contents
+
+From the unzipped folder:
 
 ```bash
 git init
@@ -31,11 +31,16 @@ git remote remove origin 2>/dev/null || true
 git remote add origin https://github.com/interactiveproplab/interactiveproplab.github.io.git
 
 git add -A
-git commit -m "Deploy stable static tracker"
+git commit -m "Deploy v18 static clean"
 git fetch origin
 git push -u origin main --force-with-lease
 ```
 
-GitHub Pages should remain set to **GitHub Actions**.
+If the remote repo previously contained Vite files, the GitHub Actions workflow still
+deploys only:
+- index.html
+- style.css
+- ipl-tracker-static-v18.js
+- favicon.ico
 
-There is no `npm install`, `npm run build`, vendoring step, or generated `dist/`.
+After Actions completes, open a fresh Chromium Incognito window or hard reload.
