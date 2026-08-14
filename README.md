@@ -1,52 +1,77 @@
-# Interactive Prop Lab — live demo v15
+# Interactive Prop Lab — v18 vendored runtime
 
-v15 keeps the same visible layout, calibration, and LED matrix as v14.
+This build combines:
 
-The change is limited to the official MediaPipe webcam/worker path.
+- the working Chromium tracker architecture;
+- three fresh-worker startup attempts;
+- 10 second timeout per attempt;
+- explicit "Facial landmarking source unavailable" errors;
+- LibreWolf/Firefox compatibility handling;
+- the Chromium compatibility footer;
+- a permanently vendored MediaPipe WASM runtime and Face Landmarker model.
 
-## What changed
+## One-time vendoring
 
-The current official 2026 MediaPipe sample does two things v14 did not match
-closely enough:
+The runtime assets are intended to be committed to this repository so normal
+deployments never download or copy them again.
 
-1. It cache-busts the copied same-origin WASM loader on worker initialization.
-2. It sends one webcam `ImageBitmap`, waits for the detection result, then
-   schedules the next frame.
+On CachyOS / Arch:
 
-v15 now does both.
+```bash
+npm install
+npm run vendor
+npm run verify-assets
+```
 
-It also uses the official sample's simple camera request:
+That creates:
 
-`navigator.mediaDevices.getUserMedia({ video: true })`
+```text
+public/
+├── wasm/
+│   └── <the exact WASM files from @mediapipe/tasks-vision 1.0.0>
+└── models/
+    └── face_landmarker.task
+```
 
-instead of imposing a specific 1280×720 preference.
+Then commit them:
 
-## Console diagnostics
+```bash
+git add -A
+git commit -m "Vendor MediaPipe runtime assets"
+git push
+```
 
-The visible site stays clean, but every ~30 frames the console reports:
+After that, GitHub Actions only verifies and deploys the committed files. It does
+not fetch the model or copy WASM from node_modules during deployment.
 
-- webcam/video dimensions;
-- transferred ImageBitmap dimensions;
-- number of faces returned by Face Landmarker.
+## Why this is useful
 
-Example:
+It removes build/deploy asset drift:
 
-`[IPL tracker] sending frame 30 1280×720 video=1280×720`
+- package version is pinned;
+- WASM bytes are committed;
+- model bytes are committed;
+- `assets-lock.json` records size + SHA-256 hashes;
+- a build fails if runtime files are absent or incomplete.
 
-`[IPL tracker] result 30 faces=1 bitmap=1280×720`
+This does not guarantee MediaPipe itself can never hang during initialization,
+which is why the fresh-worker retry logic remains.
 
-If detection still returns zero, those lines tell us whether the worker is
-receiving a real-sized camera image or an unexpected blank/zero-sized source.
+## Browser support
+
+For best compatibility, use a Chromium-based browser.
+
+Firefox/LibreWolf receive a clear landmark-source unavailable message instead of
+entering the MediaPipe runtime path.
 
 ## Deploy
 
-Same as v14:
+GitHub Pages should use **GitHub Actions** as its source.
 
-1. Replace the repository contents with this project.
-2. Settings → Pages → Source → GitHub Actions.
-3. Push to `main`.
-4. Let the included workflow build/deploy `dist/`.
+Once `public/wasm` and `public/models` are committed, ordinary deployment is:
 
-Pinned:
-- `@mediapipe/tasks-vision` 1.0.1
-- Vite 8.2.1
+```bash
+git add -A
+git commit -m "Update Interactive Prop Lab"
+git push
+```

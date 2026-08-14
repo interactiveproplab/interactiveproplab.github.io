@@ -11,21 +11,38 @@ self.addEventListener("message", async (event) => {
 
   if (message?.type === "INIT") {
     try {
+      self.postMessage({
+        type: "INIT_STAGE",
+        stage: "worker running",
+      });
+
       if (faceLandmarker) {
         faceLandmarker.close?.();
         faceLandmarker = null;
       }
 
       const wasmPath = message.wasmRoot.replace(/\/$/, "");
+
+      self.postMessage({
+        type: "INIT_STAGE",
+        stage: `resolving WASM fileset from ${wasmPath}`,
+      });
+
       const vision = await FilesetResolver.forVisionTasks(
         wasmPath,
         true
       );
 
-      // Match the current official MediaPipe worker: force the copied
-      // same-origin loader to reload instead of reusing a stale cached loader.
-      vision.wasmLoaderPath =
-        `${vision.wasmLoaderPath}?cb=${Date.now()}`;
+      self.postMessage({
+        type: "INIT_STAGE",
+        stage: "WASM fileset resolved",
+      });
+
+
+      self.postMessage({
+        type: "INIT_STAGE",
+        stage: `loading face model from ${message.modelUrl}`,
+      });
 
       const response = await fetch(message.modelUrl);
       if (!response.ok) {
@@ -35,6 +52,16 @@ self.addEventListener("message", async (event) => {
       }
 
       const modelBuffer = await response.arrayBuffer();
+
+      self.postMessage({
+        type: "INIT_STAGE",
+        stage: `face model loaded (${modelBuffer.byteLength} bytes)`,
+      });
+
+      self.postMessage({
+        type: "INIT_STAGE",
+        stage: "creating Face Landmarker task",
+      });
 
       faceLandmarker = await FaceLandmarker.createFromOptions(
         vision,
@@ -52,6 +79,11 @@ self.addEventListener("message", async (event) => {
           outputFacialTransformationMatrixes: false,
         }
       );
+
+      self.postMessage({
+        type: "INIT_STAGE",
+        stage: "Face Landmarker task created",
+      });
 
       self.postMessage({ type: "READY" });
     } catch (error) {

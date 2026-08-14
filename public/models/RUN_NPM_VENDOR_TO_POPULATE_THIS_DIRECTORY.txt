@@ -1,0 +1,2 @@
+Run: npm install && npm run vendor
+Then commit face_landmarker.task.

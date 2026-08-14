@@ -42,6 +42,9 @@ let worker = null;
 let workerReady = false;
 let workerBusy = false;
 let initPromise = null;
+let trackerInitStage = "worker not started";
+const TRACKER_INIT_ATTEMPTS = 3;
+const TRACKER_INIT_TIMEOUT_MS = 10000;
 
 let stream = null;
 let running = false;
@@ -70,6 +73,15 @@ async function start() {
   if (running) return;
 
   hideError();
+
+  if (isFirefoxFamily()) {
+    showError(
+      "Facial landmarking source unavailable in this browser. " +
+      "For best compatibility, open the live demo in a Chromium-based browser."
+    );
+    setStatus("CHROMIUM REQUIRED", false);
+    return;
+  }
   ui.start.disabled = true;
   ui.retry.disabled = true;
   setStatus("LOADING TRACKER", false);
@@ -103,60 +115,209 @@ async function start() {
   } catch (error) {
     console.error(error);
     stopTracks();
-    showError(readableError(error));
-    setStatus("UNAVAILABLE", false);
+
+    const detail = readableError(error);
+
+    showError(
+      detail.startsWith("Facial landmarking source unavailable.")
+        ? detail
+        : `Facial landmarking source unavailable. ${detail}`
+    );
+
+    setStatus(
+      "LANDMARK SOURCE UNAVAILABLE",
+      false
+    );
   } finally {
     ui.start.disabled = false;
     ui.retry.disabled = false;
   }
 }
 
-function ensureWorker() {
-  if (workerReady) return Promise.resolve();
-  if (initPromise) return initPromise;
+async function ensureWorker() {
+  if (workerReady && worker) return;
 
-  initPromise = new Promise((resolve, reject) => {
-    if (!worker) {
-      worker = new Worker(
-        new URL("./face-worker.js", import.meta.url),
-        { type: "module" }
+  let lastError = null;
+
+  for (
+    let attempt = 1;
+    attempt <= TRACKER_INIT_ATTEMPTS;
+    attempt += 1
+  ) {
+    setStatus(
+      attempt === 1
+        ? "LOADING TRACKER"
+        : `RETRYING TRACKER ${attempt}/${TRACKER_INIT_ATTEMPTS}`,
+      false
+    );
+
+    try {
+      await initializeFreshWorker(attempt);
+      return;
+    } catch (error) {
+      lastError = error;
+      console.warn(
+        `[IPL tracker] initialization attempt ${attempt} failed:`,
+        error
       );
+      destroyWorker();
 
-      worker.addEventListener("message", handleWorkerMessage);
+      if (attempt < TRACKER_INIT_ATTEMPTS) {
+        await delay(250);
+      }
     }
+  }
 
-    const timeout = window.setTimeout(() => {
-      initPromise = null;
-      reject(new Error("Face tracker initialization timed out."));
-    }, 30000);
+  throw new Error(
+    `Facial landmarking source unavailable. ` +
+    `The MediaPipe tracking runtime did not initialize after ` +
+    `${TRACKER_INIT_ATTEMPTS} attempts. ` +
+    `Last stage: ${trackerInitStage}. ` +
+    `Last error: ${lastError?.message || String(lastError)}`
+  );
+}
 
-    const onInit = (event) => {
+function initializeFreshWorker(attempt) {
+  destroyWorker();
+
+  return new Promise((resolve, reject) => {
+    trackerInitStage =
+      `attempt ${attempt}: worker starting`;
+
+    const candidate = new Worker(
+      new URL("./face-worker.js", import.meta.url),
+      { type: "module" }
+    );
+
+    worker = candidate;
+    workerReady = false;
+
+    let settled = false;
+
+    const cleanup = () => {
+      window.clearTimeout(timeout);
+      candidate.removeEventListener("message", onMessage);
+      candidate.removeEventListener("error", onError);
+    };
+
+    const succeed = () => {
+      if (settled) return;
+      settled = true;
+      cleanup();
+      workerReady = true;
+      trackerInitStage =
+        `attempt ${attempt}: ready`;
+      resolve();
+    };
+
+    const fail = (error) => {
+      if (settled) return;
+      settled = true;
+      cleanup();
+      reject(error);
+    };
+
+    const onMessage = (event) => {
       const message = event.data;
 
-      if (message?.type === "READY") {
-        window.clearTimeout(timeout);
-        worker.removeEventListener("message", onInit);
-        workerReady = true;
-        initPromise = null;
-        resolve();
-      } else if (message?.type === "INIT_ERROR") {
-        window.clearTimeout(timeout);
-        worker.removeEventListener("message", onInit);
-        initPromise = null;
-        reject(new Error(message.error || "Face tracker initialization failed."));
+      if (message?.type === "INIT_STAGE") {
+        trackerInitStage =
+          `attempt ${attempt}: ${message.stage || "unknown stage"}`;
+        console.info(
+          "[IPL tracker] init:",
+          trackerInitStage
+        );
+        return;
+      }
+
+      // Support both v17 READY and official-style INIT_DONE protocols.
+      if (
+        message?.type === "READY" ||
+        message?.type === "INIT_DONE"
+      ) {
+        succeed();
+        return;
+      }
+
+      if (
+        message?.type === "INIT_ERROR" ||
+        message?.type === "ERROR"
+      ) {
+        fail(
+          new Error(
+            message.error ||
+            "Face tracker worker initialization failed."
+          )
+        );
       }
     };
 
-    worker.addEventListener("message", onInit);
+    const onError = (event) => {
+      fail(
+        new Error(
+          event.message ||
+          "Face tracker worker failed to load."
+        )
+      );
+    };
 
-    worker.postMessage({
+    candidate.addEventListener("message", onMessage);
+    candidate.addEventListener("error", onError);
+
+    // Keep the normal runtime handler attached as well.
+    candidate.addEventListener(
+      "message",
+      handleWorkerMessage
+    );
+
+    const timeout = window.setTimeout(() => {
+      fail(
+        new Error(
+          `Initialization timed out at ${trackerInitStage}`
+        )
+      );
+    }, TRACKER_INIT_TIMEOUT_MS);
+
+    trackerInitStage =
+      `attempt ${attempt}: INIT sent`;
+
+    candidate.postMessage({
       type: "INIT",
-      wasmRoot: new URL("./wasm/", window.location.href).href,
-      modelUrl: new URL("./models/face_landmarker.task", window.location.href).href,
+      wasmRoot: new URL(
+        "./wasm/",
+        window.location.href
+      ).href,
+      modelUrl: new URL(
+        "./models/face_landmarker.task",
+        window.location.href
+      ).href,
     });
   });
+}
 
-  return initPromise;
+function destroyWorker() {
+  workerReady = false;
+  workerBusy = false;
+  initPromise = null;
+
+  if (!worker) return;
+
+  try {
+    worker.terminate();
+  } catch (error) {
+    console.warn(
+      "[IPL tracker] worker termination failed:",
+      error
+    );
+  }
+
+  worker = null;
+}
+
+function delay(ms) {
+  return new Promise(
+    (resolve) => window.setTimeout(resolve, ms)
+  );
 }
 
 async function loop() {
@@ -213,8 +374,8 @@ async function loop() {
     consecutiveInferenceErrors += 1;
 
     if (consecutiveInferenceErrors >= 4) {
-      failRuntime(error);
-      return;
+      showError(`Camera frame conversion failed: ${error?.message || String(error)}`);
+      setStatus("TRACKER ERROR", false);
     }
 
     rafId = requestAnimationFrame(loop);
@@ -237,6 +398,7 @@ function handleWorkerMessage(event) {
   if (message?.type === "RESULT") {
     workerBusy = false;
     consecutiveInferenceErrors = 0;
+    hideError();
     resultsReceived += 1;
 
     if (
@@ -303,15 +465,29 @@ function handleWorkerMessage(event) {
       return;
     }
 
-    failRuntime(
-      new Error(message.error || "Repeated Face Landmarker inference failure.")
+    showError(
+      `Face tracker error: ${
+        message.error || "Repeated Face Landmarker inference failure."
+      }`
     );
+    setStatus("TRACKER ERROR", false);
+
+    // Keep the webcam running. A detector failure should not make the camera
+    // disappear and look like camera permission failed.
+    scheduleNextFrame();
     return;
   }
 
   if (message?.type === "ERROR") {
     workerBusy = false;
-    failRuntime(new Error(message.error || "Face tracker worker failed."));
+
+    showError(
+      "Facial landmarking source unavailable. " +
+      (message.error || "The face tracker worker failed.")
+    );
+    setStatus("LANDMARK SOURCE UNAVAILABLE", false);
+
+    // Camera remains visible; only the landmark source has failed.
   }
 }
 
@@ -831,6 +1007,10 @@ function hideError() {
   ui.errorText.textContent = "";
 }
 
+
+function isFirefoxFamily() {
+  return /Firefox\//i.test(navigator.userAgent);
+}
 
 function readableError(error) {
   if (error?.name === "NotAllowedError") {

@@ -27,11 +27,14 @@ jobs:
         with:
           node-version: "22"
 
-      - name: Install pinned dependencies
+      - name: Install pinned JS dependencies
         run: npm install --no-audit --no-fund
 
+      - name: Verify committed MediaPipe runtime assets
+        run: npm run verify-assets
+
       - name: Build
-        run: npm run build
+        run: npx vite build
 
       - name: Configure Pages
         uses: actions/configure-pages@v5
