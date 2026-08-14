@@ -1,53 +1,41 @@
-# Interactive Prop Lab — v18 main-thread ImageData tracker
+# Interactive Prop Lab — v18 stable static build
 
-This version deliberately removes the face-tracking Web Worker.
+This intentionally returns to the last browser architecture that was actually
+confirmed working:
 
-The repeated production failure:
-
-`Last stage: attempt 3: INIT sent. Face tracker worker failed before initialization`
-
-occurred before MediaPipe ever ran. The worker layer itself was the failure boundary.
-
-This build returns to the detector architecture that was actually observed working:
-
-camera
-→ fixed 2D processing canvas
-→ getImageData()
-→ MediaPipe FaceLandmarker.detect(ImageData)
-→ expression mapping
-→ 64×32 protogen matrix
-
-Key points:
-
+- plain static HTML/CSS/JS;
+- no Vite;
+- no npm runtime import;
 - no Web Worker;
+- no worker handshake;
 - no worker chunk;
-- no worker INIT/READY handshake;
-- no worker startup timeout;
-- @mediapipe/tasks-vision pinned to 0.10.32;
-- explicit no-SIMD WASM fileset, matching the proven build;
-- WASM + model are vendored under public/;
-- detector input is ImageData, avoiding the video/ImageBitmap/WebGL bridge;
-- approved layout/calibration/matrix preserved;
-- Firefox/LibreWolf gets the Chromium compatibility message;
-- detector recovery failures keep the camera visible.
+- no inline-worker transform;
+- MediaPipe Tasks Vision 0.10.32;
+- main-thread fixed processing canvas;
+- `getImageData()` -> `FaceLandmarker.detect(ImageData)`;
+- approved calibration and 64x32 matrix output.
 
-## One-time asset vendoring
+The only additions are:
+- Chromium compatibility wording in the privacy/footer copy;
+- a Firefox/LibreWolf guard with a clear landmark-source unavailable message;
+- a simple GitHub Actions workflow that deploys the static files as-is.
 
-Run:
+## Deploy
 
-```bash
-npm install
-npm run vendor
-npm run verify-assets
-```
-
-Then commit everything:
+Replace the repo contents with this folder, then:
 
 ```bash
+git init
+git branch -M main
+git remote remove origin 2>/dev/null || true
+git remote add origin https://github.com/interactiveproplab/interactiveproplab.github.io.git
+
 git add -A
-git commit -m "Deploy v18 main-thread tracker"
+git commit -m "Deploy stable static tracker"
 git fetch origin
 git push -u origin main --force-with-lease
 ```
 
-Normal GitHub Pages builds then use the committed local runtime/model assets.
+GitHub Pages should remain set to **GitHub Actions**.
+
+There is no `npm install`, `npm run build`, vendoring step, or generated `dist/`.

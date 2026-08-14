@@ -15,43 +15,24 @@ concurrency:
   cancel-in-progress: true
 
 jobs:
-  build:
+  deploy:
+    environment:
+      name: github-pages
+      url: ${{ steps.deployment.outputs.page_url }}
     runs-on: ubuntu-latest
 
     steps:
       - name: Checkout
         uses: actions/checkout@v4
 
-      - name: Set up Node
-        uses: actions/setup-node@v4
-        with:
-          node-version: "22"
-
-      - name: Install pinned JS dependencies
-        run: npm install --no-audit --no-fund
-
-      - name: Verify committed MediaPipe runtime assets
-        run: npm run verify-assets
-
-      - name: Build
-        run: npx vite build
-
       - name: Configure Pages
         uses: actions/configure-pages@v5
 
-      - name: Upload Pages artifact
+      - name: Upload static site
         uses: actions/upload-pages-artifact@v3
         with:
-          path: dist
+          path: .
 
-  deploy:
-    environment:
-      name: github-pages
-      url: ${{ steps.deployment.outputs.page_url }}
-    runs-on: ubuntu-latest
-    needs: build
-
-    steps:
       - name: Deploy
         id: deployment
         uses: actions/deploy-pages@v4

@@ -5,7 +5,7 @@
   <meta name="viewport" content="width=device-width, initial-scale=1">
   <meta name="description" content="Bespoke protogen heads with live facial tracking and character-responsive expressions.">
   <title>Interactive Prop Lab — Live Facial Tracking Protogen Heads</title>
-  <link rel="stylesheet" href="./style.css">
+  <link rel="stylesheet" href="style.css">
 </head>
 <body>
   <header class="site-header">
@@ -136,9 +136,8 @@
       </div>
 
       <p class="fineprint tracker-fineprint">
-        Facial landmark inference runs on-device with MediaPipe. For best compatibility,
-        use a Chromium-based browser. MediaPipe may send SDK performance and usage
-        metrics to Google.
+        Facial landmark inference runs on-device with MediaPipe. For best compatibility, use a Chromium-based browser. MediaPipe may send
+        SDK performance and usage metrics to Google.
       </p>
     </section>
 
@@ -313,35 +312,6 @@
     window.addEventListener('scroll', requestBuildUpdate, { passive: true });
     window.addEventListener('resize', requestBuildUpdate);
   </script>
-  <script>
-    (() => {
-      const start = document.getElementById("startTracking");
-      const retry = document.getElementById("retryTracking");
-      const panel = document.getElementById("trackingError");
-      const text = document.getElementById("trackingErrorText");
-      const status = document.getElementById("trackingStatus");
-
-      function reportModuleBootFailure() {
-        // Give the module event handler the current turn to run first.
-        setTimeout(() => {
-          if (window.__IPL_TRACKER_BOOTED__) return;
-
-          if (text) {
-            text.textContent =
-              "Facial landmarking source unavailable. " +
-              "The tracking application failed to load before camera startup. " +
-              "Reload the page; for best compatibility, use a Chromium-based browser.";
-          }
-
-          if (panel) panel.hidden = false;
-          if (status) status.textContent = "LANDMARK SOURCE UNAVAILABLE";
-        }, 0);
-      }
-
-      start?.addEventListener("click", reportModuleBootFailure);
-      retry?.addEventListener("click", reportModuleBootFailure);
-    })();
-  </script>
-  <script type="module" src="./src/main.js"></script>
+  <script type="module" src="face-demo.js"></script>
 </body>
 </html>
