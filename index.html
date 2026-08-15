@@ -1,4 +1,3 @@
-```html
 <!doctype html>
 <html lang="en">
 <head>
@@ -7,47 +6,204 @@
   <meta name="viewport" content="width=device-width, initial-scale=1">
   <meta
     name="description"
-    content="Bespoke interactive cosplay hardware with live facial tracking, responsive mechanisms and character-specific behavior."
+    content="Bespoke interactive cosplay hardware with live facial tracking, responsive mechanisms and character-specific behaviour."
   >
   <title>Interactive Prop Lab — Interactive Cosplay Hardware & Live Tracking</title>
   <link rel="stylesheet" href="style.css">
+
+  <style>
+    .ideas-section {
+      position: relative;
+      overflow: hidden;
+    }
+
+    .ideas-heading {
+      display: grid;
+      grid-template-columns: minmax(0, 1fr) minmax(280px, 1fr);
+      gap: clamp(2rem, 6vw, 7rem);
+      align-items: end;
+      margin-bottom: clamp(3rem, 7vw, 6rem);
+    }
+
+    .ideas-heading h2 {
+      margin: 0;
+    }
+
+    .ideas-heading p {
+      margin: 0;
+      max-width: 42rem;
+    }
+
+    .ideas-grid {
+      display: grid;
+      grid-template-columns: repeat(2, minmax(0, 1fr));
+      column-gap: clamp(1.5rem, 4vw, 4rem);
+      row-gap: clamp(4rem, 8vw, 8rem);
+    }
+
+    .idea-card {
+      min-width: 0;
+    }
+
+    .idea-image {
+      position: relative;
+      width: 100%;
+      aspect-ratio: 4 / 3;
+      box-sizing: border-box;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      overflow: hidden;
+      padding: clamp(1rem, 2.25vw, 2rem);
+      border: 1px solid currentColor;
+    }
+
+    .idea-image img {
+      display: block;
+      width: 100%;
+      height: 100%;
+      object-fit: contain;
+      object-position: center;
+      transform: translate3d(0, 0, 0);
+      will-change: transform;
+    }
+
+    .idea-credit {
+      margin: 0.65rem 0 0;
+      min-height: 1.2em;
+      font-size: 0.68rem;
+      line-height: 1.4;
+      opacity: 0.5;
+    }
+
+    .idea-copy {
+      padding-top: clamp(1.4rem, 2.5vw, 2.4rem);
+    }
+
+    .idea-copy > span {
+      display: block;
+      margin-bottom: 0.7rem;
+      font-size: 0.72rem;
+      letter-spacing: 0.14em;
+      text-transform: uppercase;
+      opacity: 0.65;
+    }
+
+    .idea-copy h3 {
+      margin: 0 0 0.9rem;
+    }
+
+    .idea-copy p {
+      margin: 0;
+      max-width: 38rem;
+    }
+
+    .ideas-footer {
+      margin-top: clamp(5rem, 10vw, 9rem);
+      display: grid;
+      grid-template-columns: minmax(0, 1fr) minmax(280px, 1fr);
+      gap: clamp(2rem, 6vw, 7rem);
+      align-items: start;
+    }
+
+    .ideas-footer strong {
+      display: block;
+    }
+
+    .ideas-footer p {
+      margin: 0;
+      max-width: 42rem;
+    }
+
+    @media (max-width: 760px) {
+      .ideas-heading,
+      .ideas-footer {
+        grid-template-columns: 1fr;
+      }
+
+      .ideas-grid {
+        grid-template-columns: 1fr;
+        row-gap: 4.5rem;
+      }
+    }
+
+    @media (prefers-reduced-motion: reduce) {
+      .idea-image img {
+        transform: none !important;
+      }
+    }
+  </style>
 </head>
 
 <body>
+
   <header class="site-header">
     <a class="wordmark" href="#top">INTERACTIVE PROP LAB</a>
 
     <nav>
-      <a href="https://bsky.app/profile/interactiveproplab.bsky.social" target="_blank" rel="noopener">BLUESKY</a>
-      <a href="https://discord.gg/VShzJQynB" target="_blank" rel="noopener">DISCORD</a>
-      <a href="https://www.reddit.com/user/InteractivePropLab/" target="_blank" rel="noopener">REDDIT |</a>
+      <a
+        href="https://bsky.app/profile/interactiveproplab.bsky.social"
+        target="_blank"
+        rel="noopener"
+      >BLUESKY</a>
+
+      <a
+        href="https://discord.gg/VShzJQynB"
+        target="_blank"
+        rel="noopener"
+      >DISCORD</a>
+
+      <a
+        href="https://www.reddit.com/user/InteractivePropLab/"
+        target="_blank"
+        rel="noopener"
+      >REDDIT |</a>
+
       <a href="#demo">TRACKING</a>
+      <a href="#ideas">IDEAS</a>
       <a href="#system">SYSTEM</a>
       <a href="#build">BUILD</a>
-      <a class="commission-nav" href="#commissions">COMMISSIONS OPEN</a>
+
+      <a
+        class="commission-nav"
+        href="#commissions"
+      >COMMISSIONS OPEN</a>
     </nav>
   </header>
+
 
   <main id="top">
 
     <section class="hero wrap">
-      <div class="tiny">BESPOKE INTERACTIVE COSPLAY HARDWARE / LIVE CHARACTER PUPPETEERING</div>
+      <div class="tiny">
+        BESPOKE INTERACTIVE COSPLAY HARDWARE / LIVE CHARACTER PUPPETEERING
+      </div>
 
       <h1>MAKE THE CHARACTER MOVE WITH YOU.</h1>
 
       <p class="lede">
         Custom wearable electronics, live facial tracking, responsive mechanisms
-        and character-specific behavior.
+        and character-specific behaviour.
       </p>
 
       <div class="hero-actions">
-        <a class="primary-cta" href="#commissions">COMMISSION A BUILD →</a>
-        <a class="quiet-link" href="#demo">SEE THE TRACKER WORK ↓</a>
+        <a
+          class="primary-cta"
+          href="#commissions"
+        >COMMISSION A BUILD →</a>
+
+        <a
+          class="quiet-link"
+          href="#demo"
+        >SEE THE TRACKER WORK ↓</a>
       </div>
     </section>
 
 
-    <section id="demo" class="section wrap demo-section">
+    <section
+      id="demo"
+      class="section wrap demo-section"
+    >
       <div class="section-index">01 / LIVE TRACKING</div>
 
       <div class="demo-copy">
@@ -68,7 +224,6 @@
 
 
       <div class="demo-console">
-
         <div class="console-head">
           <span>LIVE CONTROL PIPELINE</span>
           <span>CAMERA → TRACKING → CHARACTER OUTPUT</span>
@@ -77,7 +232,6 @@
         <div class="demo-flow">
 
           <article class="io-card camera-card">
-
             <div class="io-head">
               <span>01 / CAMERA INPUT</span>
 
@@ -91,30 +245,66 @@
             <div class="camera-monitor">
               <div class="camera-viewport">
 
-                <video id="demoVideo" autoplay muted playsinline></video>
-                <canvas id="trackingOverlay" aria-hidden="true"></canvas>
+                <video
+                  id="demoVideo"
+                  autoplay
+                  muted
+                  playsinline
+                ></video>
 
-                <div class="tracking-start" id="trackingStart">
+                <canvas
+                  id="trackingOverlay"
+                  aria-hidden="true"
+                ></canvas>
+
+
+                <div
+                  class="tracking-start"
+                  id="trackingStart"
+                >
                   <div>
                     <span>LIVE BROWSER DEMO</span>
                     <strong>USE YOUR FACE.</strong>
-                    <button id="startTracking" type="button">ENABLE CAMERA →</button>
-                    <small>Camera permission is requested only after you click.</small>
+
+                    <button
+                      id="startTracking"
+                      type="button"
+                    >ENABLE CAMERA →</button>
+
+                    <small>
+                      Camera permission is requested only after you click.
+                    </small>
                   </div>
                 </div>
 
-                <div class="tracking-calibration" id="trackingCalibration" hidden>
+
+                <div
+                  class="tracking-calibration"
+                  id="trackingCalibration"
+                  hidden
+                >
                   <span>CALIBRATING</span>
                   <strong>HOLD NEUTRAL.</strong>
+
                   <div class="calibration-line">
                     <i id="calibrationFill"></i>
                   </div>
                 </div>
 
-                <div class="tracking-error" id="trackingError" hidden>
+
+                <div
+                  class="tracking-error"
+                  id="trackingError"
+                  hidden
+                >
                   <strong>TRACKER UNAVAILABLE</strong>
+
                   <span id="trackingErrorText"></span>
-                  <button id="retryTracking" type="button">TRY AGAIN</button>
+
+                  <button
+                    id="retryTracking"
+                    type="button"
+                  >TRY AGAIN</button>
                 </div>
 
               </div>
@@ -124,22 +314,28 @@
             <div class="io-foot">
               <span>478 LANDMARK INPUT</span>
 
-              <button class="stop-tracking" id="stopTracking" type="button" hidden>
+              <button
+                class="stop-tracking"
+                id="stopTracking"
+                type="button"
+                hidden
+              >
                 STOP CAMERA
               </button>
             </div>
-
           </article>
 
 
-          <div class="flow-link" aria-hidden="true">
+          <div
+            class="flow-link"
+            aria-hidden="true"
+          >
             <span>TRACK</span>
             <b>→</b>
           </div>
 
 
           <article class="io-card matrix-card">
-
             <div class="io-head">
               <span>02 / CHARACTER OUTPUT</span>
               <span class="matrix-size">SIMULATED 64 × 32 LED MATRIX</span>
@@ -162,11 +358,25 @@
             </div>
 
 
-            <div class="signal-strip" id="signalStrip">
-              <span data-signal="eyes"><i></i>EYES</span>
-              <span data-signal="brows"><i></i>BROWS</span>
-              <span data-signal="gaze"><i></i>GAZE</span>
-              <span data-signal="mouth"><i></i>MOUTH</span>
+            <div
+              class="signal-strip"
+              id="signalStrip"
+            >
+              <span data-signal="eyes">
+                <i></i>EYES
+              </span>
+
+              <span data-signal="brows">
+                <i></i>BROWS
+              </span>
+
+              <span data-signal="gaze">
+                <i></i>GAZE
+              </span>
+
+              <span data-signal="mouth">
+                <i></i>MOUTH
+              </span>
             </div>
 
 
@@ -174,7 +384,6 @@
               <span>EXPRESSION MAPPING</span>
               <span>LIVE CHARACTER RESPONSE</span>
             </div>
-
           </article>
 
         </div>
@@ -186,13 +395,222 @@
         use a Chromium-based browser. MediaPipe may send SDK performance and usage metrics
         to Google.
       </p>
-
     </section>
 
 
-    <section id="system" class="section wrap">
+    <section
+      id="ideas"
+      class="section wrap ideas-section"
+    >
+      <div class="section-index">02 / POSSIBLE BUILDS</div>
 
-      <div class="section-index">02 / SYSTEM</div>
+      <div class="ideas-heading">
+        <h2>WHAT COULD<br>YOU BUILD?</h2>
+
+        <p>
+          The tracking system is only the input layer. The same control signals can
+          drive screens, physical eyes, eyelids, jaws and other mechanisms built
+          around the character.
+        </p>
+      </div>
+
+
+      <div class="ideas-grid">
+
+        <article
+          class="idea-card"
+          data-idea-drift="-18"
+        >
+          <div class="idea-image">
+            <img
+              src="./images/danzo.jpg"
+              alt="Danzō Shimura reference"
+              loading="lazy"
+            >
+          </div>
+
+          <p class="idea-credit">
+            Character/image © respective rights holders. Used here as visual reference.
+          </p>
+
+          <div class="idea-copy">
+            <span>TRACKED MULTI-EYE PROP</span>
+
+            <h3>DANZŌ-STYLE ARM</h3>
+
+            <p>
+              The Sharingan eyes embedded along the arm could follow the wearer’s
+              own gaze, blink with them and move together as one coordinated system.
+            </p>
+          </div>
+        </article>
+
+
+        <article
+          class="idea-card"
+          data-idea-drift="16"
+        >
+          <div class="idea-image">
+            <img
+              src="./images/fnaf.jpg"
+              alt="Five Nights at Freddy's character reference"
+              loading="lazy"
+            >
+          </div>
+
+          <p class="idea-credit">
+            Character/image © respective rights holders. Used here as visual reference.
+          </p>
+
+          <div class="idea-copy">
+            <span>ANIMATRONIC CHARACTER HEADS</span>
+
+            <h3>FNAF-STYLE BUILDS</h3>
+
+            <p>
+              Eyes, blinking, brows, jaws and other facial mechanisms can respond
+              directly to the performer inside the head.
+            </p>
+          </div>
+        </article>
+
+
+        <article
+          class="idea-card"
+          data-idea-drift="14"
+        >
+          <div class="idea-image">
+            <img
+              src="./images/third-eye.jpg"
+              alt="Three-eyed character reference"
+              loading="lazy"
+            >
+          </div>
+
+          <p class="idea-credit">
+            Character/image © respective rights holders. Used here as visual reference.
+          </p>
+
+          <div class="idea-copy">
+            <span>WEARABLE EYE MECHANISM</span>
+
+            <h3>TRACKED THIRD EYES</h3>
+
+            <p>
+              A self-contained additional eye that follows the wearer’s gaze and
+              blinks with them, styled around the character’s iris, pupil and
+              surrounding anatomy.
+            </p>
+          </div>
+        </article>
+
+
+        <article
+          class="idea-card"
+          data-idea-drift="-16"
+        >
+          <div class="idea-image">
+            <img
+              src="./images/screen-face.jpg"
+              alt="Screen-faced character reference"
+              loading="lazy"
+            >
+          </div>
+
+          <p class="idea-credit">
+            Character/image © respective rights holders. Used here as visual reference.
+          </p>
+
+          <div class="idea-copy">
+            <span>LIVE DIGITAL FACES</span>
+
+            <h3>SCREEN-FACED CHARACTERS</h3>
+
+            <p>
+              LED, LCD and television-style character faces can use the same live
+              facial tracking demonstrated above, with visuals and behaviour built
+              around the character.
+            </p>
+          </div>
+        </article>
+
+
+        <article
+          class="idea-card"
+          data-idea-drift="-14"
+        >
+          <div class="idea-image">
+            <img
+              src="./images/multi-eye.jpg"
+              alt="Multi-eyed character reference"
+              loading="lazy"
+            >
+          </div>
+
+          <p class="idea-credit">
+            Character/image © respective rights holders. Used here as visual reference.
+          </p>
+
+          <div class="idea-copy">
+            <span>COORDINATED CHARACTER ANATOMY</span>
+
+            <h3>MULTI-EYE CHARACTERS</h3>
+
+            <p>
+              Several physical eyes can share the wearer’s gaze and blinking, or
+              use offset movement and timing to create character-specific behaviour.
+            </p>
+          </div>
+        </article>
+
+
+        <article
+          class="idea-card"
+          data-idea-drift="18"
+        >
+          <div class="idea-image">
+            <img
+              src="./images/creature.jpg"
+              alt="Creature or character prop reference"
+              loading="lazy"
+            >
+          </div>
+
+          <p class="idea-credit">
+            Character/image © respective rights holders. Used here as visual reference.
+          </p>
+
+          <div class="idea-copy">
+            <span>RESPONSIVE MECHANISMS</span>
+
+            <h3>MASKS, CREATURES + PROPS</h3>
+
+            <p>
+              Moving jaws, extra mouths, expressive lenses, creature features and
+              other costume elements can be tied directly to performer input.
+            </p>
+          </div>
+        </article>
+
+      </div>
+
+
+      <div class="ideas-footer">
+        <strong>HAVE SOMETHING STRANGER IN MIND?</strong>
+
+        <p>
+          Send me the character or reference and I can work out what can be made
+          responsive.
+        </p>
+      </div>
+    </section>
+
+
+    <section
+      id="system"
+      class="section wrap"
+    >
+      <div class="section-index">03 / SYSTEM</div>
 
       <div class="system-grid">
 
@@ -245,25 +663,34 @@
           </div>
 
         </div>
-
       </div>
     </section>
 
 
-    <section id="build" class="build-section">
-
+    <section
+      id="build"
+      class="build-section"
+    >
       <div class="wrap build-wrap">
 
         <div class="build-heading-wrap">
-          <div class="build-heading" id="buildHeading">03 / BUILD PROCESS</div>
+          <div
+            class="build-heading"
+            id="buildHeading"
+          >
+            04 / BUILD PROCESS
+          </div>
         </div>
 
 
         <div class="build-copy">
 
-          <article class="build-step" data-drift="-18">
-
+          <article
+            class="build-step"
+            data-drift="-18"
+          >
             <div class="step-number">01</div>
+
             <h3>CHARACTER REVIEW</h3>
 
             <p>
@@ -272,16 +699,18 @@
             </p>
 
             <div class="pipeline">
-              REFERENCE → BEHAVIOR MAP → PHYSICAL ENVELOPE
+              REFERENCE → BEHAVIOUR MAP → PHYSICAL ENVELOPE
             </div>
-
           </article>
 
 
-          <article class="build-step" data-drift="12">
-
+          <article
+            class="build-step"
+            data-drift="12"
+          >
             <div class="step-number">02</div>
-            <h3>BEHAVIOR DESIGN</h3>
+
+            <h3>BEHAVIOUR DESIGN</h3>
 
             <p>
               Decide how the performer controls the character: literal where useful,
@@ -291,13 +720,15 @@
             <div class="pipeline">
               INPUT → CONTROL SIGNAL → CHARACTER RESPONSE
             </div>
-
           </article>
 
 
-          <article class="build-step" data-drift="-10">
-
+          <article
+            class="build-step"
+            data-drift="-10"
+          >
             <div class="step-number">03</div>
+
             <h3>FABRICATION + ELECTRONICS</h3>
 
             <p>
@@ -308,13 +739,15 @@
             <div class="pipeline">
               CAD → PRINT → FIT → WIRE → TEST
             </div>
-
           </article>
 
 
-          <article class="build-step" data-drift="16">
-
+          <article
+            class="build-step"
+            data-drift="16"
+          >
             <div class="step-number">04</div>
+
             <h3>CALIBRATION + HANDOFF</h3>
 
             <p>
@@ -325,26 +758,28 @@
             <div class="pipeline">
               FIT → CALIBRATE → VALIDATE → DELIVER
             </div>
-
           </article>
 
         </div>
 
       </div>
-
     </section>
 
 
-    <section id="commissions" class="commission-section">
-
+    <section
+      id="commissions"
+      class="commission-section"
+    >
       <div class="wrap commission-wrap">
 
-        <div class="commission-kicker">04 / COMMISSIONS OPEN</div>
+        <div class="commission-kicker">
+          05 / COMMISSIONS OPEN
+        </div>
+
 
         <div class="commission-grid">
 
           <div>
-
             <h2>GOT AN<br>IDEA?</h2>
 
             <p class="commission-copy">
@@ -361,13 +796,12 @@
             >
               DISCUSS A BUILD ON DISCORD ↗
             </a>
-
           </div>
 
 
           <div class="price-block">
-
             <span>BESPOKE INTERACTIVE BUILDS</span>
+
             <strong>PRICED PER PROJECT</strong>
 
             <small>
@@ -383,13 +817,10 @@
               <span>character-specific control mapping</span>
               <span>complete wearable systems</span>
             </div>
-
           </div>
 
         </div>
-
       </div>
-
     </section>
 
   </main>
@@ -402,26 +833,21 @@
 
 
   <script>
-
     const buildSection = document.querySelector('.build-section');
     const buildHeading = document.getElementById('buildHeading');
     const buildSteps = [...document.querySelectorAll('.build-step')];
 
     let ticking = false;
 
-
     function updateBuildParallax() {
-
       ticking = false;
 
       if (!buildSection || !buildHeading) return;
-
 
       const rect = buildSection.getBoundingClientRect();
       const vh = window.innerHeight;
       const total = Math.max(1, rect.height - vh);
       const progress = Math.max(0, Math.min(1, -rect.top / total));
-
 
       const scale = 1 + progress * 2.25;
       const tracking = 0.14 + progress * 0.08;
@@ -430,9 +856,7 @@
       buildHeading.style.letterSpacing = `${tracking}em`;
       buildHeading.style.opacity = `${0.5 + progress * 0.5}`;
 
-
-      buildSteps.forEach((step) => {
-
+      buildSteps.forEach((step, index) => {
         const r = step.getBoundingClientRect();
         const local = (vh * 0.5 - (r.top + r.height * 0.5)) / vh;
         const drift = Number(step.dataset.drift || 0);
@@ -440,31 +864,102 @@
 
         step.style.transform = `translate3d(0, ${y}px, 0)`;
 
-
         const distance = Math.abs((r.top + r.height / 2) - vh / 2);
         const active = distance < vh * 0.32;
 
         step.classList.toggle('active', active);
-
       });
     }
 
-
     function requestBuildUpdate() {
-
       if (!ticking) {
         ticking = true;
         requestAnimationFrame(updateBuildParallax);
       }
-
     }
-
 
     updateBuildParallax();
 
-    window.addEventListener('scroll', requestBuildUpdate, { passive: true });
-    window.addEventListener('resize', requestBuildUpdate);
+    window.addEventListener(
+      'scroll',
+      requestBuildUpdate,
+      { passive: true }
+    );
 
+    window.addEventListener(
+      'resize',
+      requestBuildUpdate
+    );
+  </script>
+
+
+  <script>
+    const ideaCards = [...document.querySelectorAll('.idea-card')];
+
+    let ideaTicking = false;
+
+    function updateIdeaParallax() {
+      ideaTicking = false;
+
+      if (
+        window.matchMedia('(prefers-reduced-motion: reduce)').matches
+      ) {
+        ideaCards.forEach((card) => {
+          const image = card.querySelector('.idea-image img');
+
+          if (image) {
+            image.style.transform = '';
+          }
+        });
+
+        return;
+      }
+
+      const vh = window.innerHeight;
+
+      ideaCards.forEach((card) => {
+        const image = card.querySelector('.idea-image img');
+
+        if (!image) return;
+
+        const rect = card.getBoundingClientRect();
+
+        if (
+          rect.bottom < -200 ||
+          rect.top > vh + 200
+        ) {
+          return;
+        }
+
+        const center = rect.top + rect.height * 0.5;
+        const viewportCenter = vh * 0.5;
+        const local = (viewportCenter - center) / vh;
+        const drift = Number(card.dataset.ideaDrift || 0);
+        const y = Math.max(-1, Math.min(1, local)) * drift;
+
+        image.style.transform = `translate3d(0, ${y}px, 0)`;
+      });
+    }
+
+    function requestIdeaUpdate() {
+      if (!ideaTicking) {
+        ideaTicking = true;
+        requestAnimationFrame(updateIdeaParallax);
+      }
+    }
+
+    updateIdeaParallax();
+
+    window.addEventListener(
+      'scroll',
+      requestIdeaUpdate,
+      { passive: true }
+    );
+
+    window.addEventListener(
+      'resize',
+      requestIdeaUpdate
+    );
   </script>
 
 
@@ -475,4 +970,3 @@
 
 </body>
 </html>
-```
