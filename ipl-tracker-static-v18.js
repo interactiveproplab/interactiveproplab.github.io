@@ -900,8 +900,6 @@ function waitForVideo(video) {
   });
 }
 
-/* Same generic measurements used by the standalone tracker. */
-
 function measureLandmarks(points, measuredAt) {
   const faceWidth = distance(points[234], points[454]);
 
