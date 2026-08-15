@@ -14,7 +14,7 @@ const MODEL_URL =
 
 const CALIBRATION_MS = 1600;
 const CALIBRATION_SETTLE_MS = 350;
-const FRAME_INTERVAL_MS = 85; // ~12 fps; enough for the web demo with smoothing.
+const FRAME_INTERVAL_MS = 85; 
 
 const TUNING = {
   gazeGain: 2.4,
@@ -321,7 +321,6 @@ function collectCalibration(raw, now) {
   const progress = clamp(elapsed / CALIBRATION_MS, 0, 1);
   ui.calibrationFill.style.width = `${progress * 100}%`;
 
-  // Ignore the first fraction of a second while landmark geometry settles.
   if (elapsed >= CALIBRATION_SETTLE_MS) {
     calibrationSamples.push(raw);
   }
@@ -451,7 +450,6 @@ function configureProcessingFrame() {
   const maxWidth = 640;
   const scale = Math.min(1, maxWidth / sourceWidth);
 
-  // Keep the detector frame fixed for the session and use even dimensions.
   processingWidth = Math.max(
     2,
     Math.round((sourceWidth * scale) / 2) * 2
@@ -469,7 +467,6 @@ function configureProcessingFrame() {
 }
 
 function sizeCanvases() {
-  // Deliberately do not resize the detector canvas while tracking.
   if (!processingWidth || !processingHeight) return;
 
   if (
@@ -511,7 +508,6 @@ function drawFeatureOverlay(points) {
   overlayContext.shadowColor = "rgba(255,107,94,.45)";
   overlayContext.shadowBlur = Math.max(4, w / 160);
 
-  // Deliberately only show control-relevant features, not a full face mesh.
   drawLoop(points, [33, 160, 158, 133, 153, 144], w, h);
   drawLoop(points, [362, 385, 387, 263, 373, 380], w, h);
 
@@ -627,7 +623,6 @@ function drawProtogenMatrix(current) {
   ctx.fillStyle = "#050404";
   ctx.fillRect(0, 0, ui.matrix.width, ui.matrix.height);
 
-  // Dim physical matrix points, so the output reads as hardware rather than vector art.
   for (let y = 0; y < rows; y += 1) {
     for (let x = 0; x < cols; x += 1) {
       drawLed(ctx, x, y, cellW, cellH, 0.10);
@@ -721,7 +716,6 @@ function drawMatrixEye(
     }
   }
 
-  // Dark pupil/cut-out creates a readable gaze direction within the lit eye.
   const pupilX = centreX + Math.round(gazeX * 3);
   const pupilY = centreY + Math.round(gazeY * 1.5);
   const pupilRadius = openness < 0.3 ? 0 : 1;
@@ -787,7 +781,6 @@ function drawMatrixMouth(
     }
   }
 
-  // Light the corners so even subtle smiles/frowns read clearly at matrix scale.
   const cornerLift = Math.round(clamp(curvature, -1, 1) * 3);
   drawLed(
     ctx,
@@ -1038,7 +1031,6 @@ function normalise(raw, base) {
   const rightEyeRatio =
     raw.rightEyeOpen / Math.max(base.rightEyeOpen, 1e-9);
 
-  // Neutral should look neutral, not maximally open.
   const leftEyeOpen = clamp(
     0.72 + (leftEyeRatio - 1) * 2.2,
     0,
