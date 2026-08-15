@@ -270,14 +270,12 @@
       const total = Math.max(1, rect.height - vh);
       const progress = Math.max(0, Math.min(1, -rect.top / total));
 
-      // Build label grows progressively as the reader moves down the process.
       const scale = 1 + progress * 2.25;
       const tracking = 0.14 + progress * 0.08;
       buildHeading.style.transform = `scale(${scale})`;
       buildHeading.style.letterSpacing = `${tracking}em`;
       buildHeading.style.opacity = `${0.5 + progress * 0.5}`;
 
-      // Each process block drifts at a slightly different rate.
       buildSteps.forEach((step, index) => {
         const r = step.getBoundingClientRect();
         const local = (vh * 0.5 - (r.top + r.height * 0.5)) / vh;
