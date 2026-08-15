@@ -1,20 +1,26 @@
+```html
 <!doctype html>
 <html lang="en">
 <head>
   <link rel="icon" href="./favicon.ico">
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width, initial-scale=1">
-  <meta name="description" content="Bespoke protogen heads with live facial tracking and character-responsive expressions.">
-  <title>Interactive Prop Lab — Live Facial Tracking Protogen Heads</title>
+  <meta
+    name="description"
+    content="Bespoke interactive cosplay hardware with live facial tracking, responsive mechanisms and character-specific behaviour."
+  >
+  <title>Interactive Prop Lab — Interactive Cosplay Hardware & Live Tracking</title>
   <link rel="stylesheet" href="style.css">
 </head>
+
 <body>
   <header class="site-header">
     <a class="wordmark" href="#top">INTERACTIVE PROP LAB</a>
+
     <nav>
       <a href="https://bsky.app/profile/interactiveproplab.bsky.social" target="_blank" rel="noopener">BLUESKY</a>
       <a href="https://discord.gg/VShzJQynB" target="_blank" rel="noopener">DISCORD</a>
-      <a href="https://www.reddit.com/user/InteractivePropLab/" target="_blank" rel="noopener">REDDIT  |</a>
+      <a href="https://www.reddit.com/user/InteractivePropLab/" target="_blank" rel="noopener">REDDIT |</a>
       <a href="#demo">TRACKING</a>
       <a href="#system">SYSTEM</a>
       <a href="#build">BUILD</a>
@@ -23,54 +29,68 @@
   </header>
 
   <main id="top">
+
     <section class="hero wrap">
-      <div class="tiny">BESPOKE PROTOGEN HARDWARE / LIVE FACIAL PUPPETEERING</div>
-      <h1>LIVE FACIAL TRACKING FOR PROTOGEN BUILDS.</h1>
+      <div class="tiny">BESPOKE INTERACTIVE COSPLAY HARDWARE / LIVE CHARACTER PUPPETEERING</div>
+
+      <h1>MAKE THE CHARACTER MOVE WITH YOU.</h1>
+
       <p class="lede">
-        Custom protogen heads with continuous expression tracking, custom fabrication
+        Custom wearable electronics, live facial tracking, responsive mechanisms
         and character-specific behaviour.
       </p>
+
       <div class="hero-actions">
         <a class="primary-cta" href="#commissions">COMMISSION A BUILD →</a>
         <a class="quiet-link" href="#demo">SEE THE TRACKER WORK ↓</a>
       </div>
     </section>
 
+
     <section id="demo" class="section wrap demo-section">
       <div class="section-index">01 / LIVE TRACKING</div>
 
       <div class="demo-copy">
         <h2>FACE IN.<br>CHARACTER OUT.</h2>
+
         <div class="demo-copy-text">
           <p>
             Your camera is the input only. The tracker reads facial movement,
-            normalises it into control signals, then drives a simulated protogen
-            LED face on the right.
+            normalises it into control signals, then drives a simulated LED character
+            face on the right.
           </p>
+
           <p class="privacy-note">
             Video is processed locally in your browser. No microphone is requested.
           </p>
         </div>
       </div>
 
+
       <div class="demo-console">
+
         <div class="console-head">
           <span>LIVE CONTROL PIPELINE</span>
           <span>CAMERA → TRACKING → CHARACTER OUTPUT</span>
         </div>
 
         <div class="demo-flow">
+
           <article class="io-card camera-card">
+
             <div class="io-head">
               <span>01 / CAMERA INPUT</span>
+
               <div class="pane-status">
                 <i id="trackingDot"></i>
                 <span id="trackingStatus">CAMERA OFF</span>
               </div>
             </div>
 
+
             <div class="camera-monitor">
               <div class="camera-viewport">
+
                 <video id="demoVideo" autoplay muted playsinline></video>
                 <canvas id="trackingOverlay" aria-hidden="true"></canvas>
 
@@ -86,7 +106,9 @@
                 <div class="tracking-calibration" id="trackingCalibration" hidden>
                   <span>CALIBRATING</span>
                   <strong>HOLD NEUTRAL.</strong>
-                  <div class="calibration-line"><i id="calibrationFill"></i></div>
+                  <div class="calibration-line">
+                    <i id="calibrationFill"></i>
+                  </div>
                 </div>
 
                 <div class="tracking-error" id="trackingError" hidden>
@@ -94,35 +116,51 @@
                   <span id="trackingErrorText"></span>
                   <button id="retryTracking" type="button">TRY AGAIN</button>
                 </div>
+
               </div>
             </div>
 
+
             <div class="io-foot">
               <span>478 LANDMARK INPUT</span>
+
               <button class="stop-tracking" id="stopTracking" type="button" hidden>
                 STOP CAMERA
               </button>
             </div>
+
           </article>
+
 
           <div class="flow-link" aria-hidden="true">
             <span>TRACK</span>
             <b>→</b>
           </div>
 
+
           <article class="io-card matrix-card">
+
             <div class="io-head">
-              <span>02 / PROTOGEN OUTPUT</span>
+              <span>02 / CHARACTER OUTPUT</span>
               <span class="matrix-size">SIMULATED 64 × 32 LED MATRIX</span>
             </div>
 
+
             <div class="matrix-monitor">
               <div class="matrix-visor">
-                <canvas id="protogenMatrix" width="640" height="320"
-                  aria-label="Simulated protogen LED matrix face"></canvas>
+
+                <canvas
+                  id="protogenMatrix"
+                  width="640"
+                  height="320"
+                  aria-label="Simulated LED character face"
+                ></canvas>
+
                 <div class="matrix-glass"></div>
+
               </div>
             </div>
+
 
             <div class="signal-strip" id="signalStrip">
               <span data-signal="eyes"><i></i>EYES</span>
@@ -131,176 +169,310 @@
               <span data-signal="mouth"><i></i>MOUTH</span>
             </div>
 
+
             <div class="io-foot matrix-foot">
               <span>EXPRESSION MAPPING</span>
               <span>LIVE CHARACTER RESPONSE</span>
             </div>
+
           </article>
+
         </div>
       </div>
 
+
       <p class="fineprint tracker-fineprint">
-        Facial landmark inference runs on-device with MediaPipe. For best compatibility, use a Chromium-based browser. MediaPipe may send
-        SDK performance and usage metrics to Google.
+        Facial landmark inference runs on-device with MediaPipe. For best compatibility,
+        use a Chromium-based browser. MediaPipe may send SDK performance and usage metrics
+        to Google.
       </p>
+
     </section>
 
+
     <section id="system" class="section wrap">
+
       <div class="section-index">02 / SYSTEM</div>
+
       <div class="system-grid">
+
         <div class="system-heading">
           <h2>ONE FACE IN.<br>ONE CHARACTER OUT.</h2>
+
           <p>
-            Each build can interpret the wearer differently. Expression signals can be literal,
-            exaggerated, softened or remapped to fit the character.
+            Each build can interpret the wearer differently. Expression signals can be
+            literal, exaggerated, softened or remapped to fit the character.
           </p>
         </div>
 
+
         <div class="rows">
-          <div class="row"><span>01</span><strong>Natural blinking</strong><p>Independent eyelid state follows the wearer.</p></div>
-          <div class="row"><span>02</span><strong>Gaze + pupils</strong><p>Eye direction becomes responsive character gaze.</p></div>
-          <div class="row"><span>03</span><strong>Independent brows</strong><p>Left and right brow movement remain distinct.</p></div>
-          <div class="row"><span>04</span><strong>Mouth state</strong><p>Opening, shape and broader expression drive the face.</p></div>
-          <div class="row"><span>05</span><strong>Character mapping</strong><p>The response is tuned to the character rather than a generic preset.</p></div>
-          <div class="row"><span>06</span><strong>Per-user calibration</strong><p>The tracking range is tuned around the actual wearer.</p></div>
+
+          <div class="row">
+            <span>01</span>
+            <strong>Natural blinking</strong>
+            <p>Eyelids, shutters or character eyes can follow the wearer.</p>
+          </div>
+
+          <div class="row">
+            <span>02</span>
+            <strong>Gaze + pupils</strong>
+            <p>Eye direction can drive displays or physical moving eyes.</p>
+          </div>
+
+          <div class="row">
+            <span>03</span>
+            <strong>Independent expression</strong>
+            <p>Brows, eyelids and other features can remain independently controllable.</p>
+          </div>
+
+          <div class="row">
+            <span>04</span>
+            <strong>Mouth state</strong>
+            <p>Opening, shape and expression can drive jaws, mouths or animated faces.</p>
+          </div>
+
+          <div class="row">
+            <span>05</span>
+            <strong>Character mapping</strong>
+            <p>The response is designed around the character rather than a generic preset.</p>
+          </div>
+
+          <div class="row">
+            <span>06</span>
+            <strong>Per-user calibration</strong>
+            <p>Tracking and movement ranges are tuned around the actual wearer.</p>
+          </div>
+
         </div>
+
       </div>
     </section>
 
+
     <section id="build" class="build-section">
+
       <div class="wrap build-wrap">
+
         <div class="build-heading-wrap">
           <div class="build-heading" id="buildHeading">03 / BUILD PROCESS</div>
         </div>
 
+
         <div class="build-copy">
+
           <article class="build-step" data-drift="-18">
+
             <div class="step-number">01</div>
             <h3>CHARACTER REVIEW</h3>
+
             <p>
-              Reference sheet, expression style, proportions, display constraints,
+              Reference material, movement, proportions, physical constraints,
               fitting requirements and the visual rules of the character.
             </p>
-            <div class="pipeline">REFERENCE → EXPRESSION MAP → PHYSICAL ENVELOPE</div>
+
+            <div class="pipeline">
+              REFERENCE → BEHAVIOUR MAP → PHYSICAL ENVELOPE
+            </div>
+
           </article>
+
 
           <article class="build-step" data-drift="12">
+
             <div class="step-number">02</div>
-            <h3>EXPRESSION BEHAVIOUR</h3>
+            <h3>BEHAVIOUR DESIGN</h3>
+
             <p>
-              Decide how facial movement becomes character movement: literal where useful,
-              stylised where that produces a stronger performance.
+              Decide how the performer controls the character: literal where useful,
+              stylised where that creates a stronger effect.
             </p>
-            <div class="pipeline">INPUT → EXPRESSION → CHARACTER RESPONSE</div>
+
+            <div class="pipeline">
+              INPUT → CONTROL SIGNAL → CHARACTER RESPONSE
+            </div>
+
           </article>
+
 
           <article class="build-step" data-drift="-10">
+
             <div class="step-number">03</div>
             <h3>FABRICATION + ELECTRONICS</h3>
+
             <p>
-              Shell, visor, displays, camera placement, electronics, battery,
-              ventilation and serviceability are designed as one wearable system.
+              Structure, displays or mechanisms, camera placement, electronics,
+              power, mounting and serviceability are designed as one wearable system.
             </p>
-            <div class="pipeline">CAD → PRINT → FIT → WIRE → TEST</div>
+
+            <div class="pipeline">
+              CAD → PRINT → FIT → WIRE → TEST
+            </div>
+
           </article>
+
 
           <article class="build-step" data-drift="16">
+
             <div class="step-number">04</div>
             <h3>CALIBRATION + HANDOFF</h3>
+
             <p>
-              Final fit and per-user calibration. Neutral, subtle and exaggerated expressions
-              are tuned so the physical character reads correctly.
+              Final fit and per-user calibration. Subtle and exaggerated inputs
+              are tuned so the physical character responds correctly.
             </p>
-            <div class="pipeline">FIT → CALIBRATE → VALIDATE → DELIVER</div>
+
+            <div class="pipeline">
+              FIT → CALIBRATE → VALIDATE → DELIVER
+            </div>
+
           </article>
 
+        </div>
+
+      </div>
+
     </section>
+
 
     <section id="commissions" class="commission-section">
+
       <div class="wrap commission-wrap">
+
         <div class="commission-kicker">04 / COMMISSIONS OPEN</div>
+
         <div class="commission-grid">
+
           <div>
-            <h2>WANT<br>ONE?</h2>
+
+            <h2>GOT AN<br>IDEA?</h2>
+
             <p class="commission-copy">
-              I’m considering a small number of bespoke builds for protogen characters
-              where live facial tracking materially improves the performance.
+              I take on bespoke cosplay and character builds where tracking,
+              electronics or mechanisms can make something normally static
+              actually perform.
             </p>
-            <a class="commission-button" href="https://www.reddit.com/user/InteractivePropLab/" target="_blank" rel="noopener">
-              MESSAGE ME ON REDDIT ↗
+
+            <a
+              class="commission-button"
+              href="https://discord.gg/VShzJQynB"
+              target="_blank"
+              rel="noopener"
+            >
+              DISCUSS A BUILD ON DISCORD ↗
             </a>
+
           </div>
+
 
           <div class="price-block">
-            <span>TYPICAL COMMISSION</span>
-            <strong>$5,000–$5,500</strong>
-            <small>USD · final pricing depends on character design and physical requirements</small>
+
+            <span>BESPOKE INTERACTIVE BUILDS</span>
+            <strong>PRICED PER PROJECT</strong>
+
+            <small>
+              From compact tracked props to complete wearable character systems
+            </small>
+
 
             <div class="included">
-              <span>custom head fabrication</span>
-              <span>live facial tracking</span>
-              <span>character-specific expression mapping</span>
-              <span>display + battery integration</span>
-              <span>ventilation</span>
-              <span>per-user fitting + calibration</span>
+              <span>tracked eyes + facial features</span>
+              <span>screen-faced characters</span>
+              <span>animated masks + helmets</span>
+              <span>responsive props + mechanisms</span>
+              <span>character-specific control mapping</span>
+              <span>complete wearable systems</span>
             </div>
+
           </div>
+
         </div>
+
       </div>
+
     </section>
+
   </main>
+
 
   <footer class="wrap footer">
     <span>INTERACTIVE PROP LAB</span>
     <span>2026</span>
   </footer>
 
+
   <script>
+
     const buildSection = document.querySelector('.build-section');
     const buildHeading = document.getElementById('buildHeading');
     const buildSteps = [...document.querySelectorAll('.build-step')];
 
     let ticking = false;
 
+
     function updateBuildParallax() {
+
       ticking = false;
+
       if (!buildSection || !buildHeading) return;
+
 
       const rect = buildSection.getBoundingClientRect();
       const vh = window.innerHeight;
       const total = Math.max(1, rect.height - vh);
       const progress = Math.max(0, Math.min(1, -rect.top / total));
 
+
       const scale = 1 + progress * 2.25;
       const tracking = 0.14 + progress * 0.08;
+
       buildHeading.style.transform = `scale(${scale})`;
       buildHeading.style.letterSpacing = `${tracking}em`;
       buildHeading.style.opacity = `${0.5 + progress * 0.5}`;
 
-      buildSteps.forEach((step, index) => {
+
+      buildSteps.forEach((step) => {
+
         const r = step.getBoundingClientRect();
         const local = (vh * 0.5 - (r.top + r.height * 0.5)) / vh;
         const drift = Number(step.dataset.drift || 0);
         const y = Math.max(-1.25, Math.min(1.25, local)) * drift;
+
         step.style.transform = `translate3d(0, ${y}px, 0)`;
+
 
         const distance = Math.abs((r.top + r.height / 2) - vh / 2);
         const active = distance < vh * 0.32;
+
         step.classList.toggle('active', active);
+
       });
     }
 
+
     function requestBuildUpdate() {
+
       if (!ticking) {
         ticking = true;
         requestAnimationFrame(updateBuildParallax);
       }
+
     }
 
+
     updateBuildParallax();
+
     window.addEventListener('scroll', requestBuildUpdate, { passive: true });
     window.addEventListener('resize', requestBuildUpdate);
+
   </script>
-  <script type="module" src="./ipl-tracker-static-v18.js?v=18-static-clean"></script>
+
+
+  <script
+    type="module"
+    src="./ipl-tracker-static-v18.js?v=18-static-clean"
+  ></script>
+
 </body>
 </html>
+```
